@@ -1,12 +1,15 @@
 /* ===== Stap A: basis pagina-opmaak ===== */
 body {
   margin: 0;
-  height: 100vh;
+  min-height: 100vh; /* min ipv vast: bij veel inhoud groeit de pagina i.p.v. afknippen */
+  box-sizing: border-box;
+  padding: 20px 0;
   background-color: #1e1e2f; /* donkere achtergrond */
   color: #f5f5f5;
   font-family: Arial, sans-serif;
 
-  /* alles centreren met flexbox */
+  /* alles centreren met flexbox; bij overflow blijft de pagina scrollbaar
+     (geen onbereikbare knoppen onderaan op mobiel) */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -36,6 +39,7 @@ body {
   box-sizing: border-box;
 
   transform-style: preserve-3d; /* zodat rotateX/rotateY echt 3D zijn */
+  touch-action: manipulation;   /* sneller reageren op tik, geen zoom-delay */
 }
 
 .pip {
@@ -45,6 +49,7 @@ body {
   align-self: center;
   justify-self: center;
   background-color: transparent; /* standaard onzichtbaar */
+  pointer-events: none; /* pips vangen geen tik op; tik gaat naar de dobbelsteen */
 }
 
 /* zichtbare stip (zwart, zoals echte dobbelsteen) */
@@ -114,13 +119,6 @@ body {
   max-width: 320px;
 }
 
-#instellingenSamenvatting {
-  font-size: 0.85rem;
-  color: #cfcfcf;
-  text-align: center;
-  max-width: 320px;
-}
-
 /* ===== Spelscherm: één focus ===== */
 
 /* bovenaan: wiens beurt, groot en vet */
@@ -129,6 +127,7 @@ body {
   font-weight: bold;
   text-align: center;
   margin: 0;
+  pointer-events: none; /* puur tekst: mag geen tik onderscheppen */
 }
 
 /* container voor de bewaar-knop(pen): even breed als de dobbelsteen-rij */
@@ -166,32 +165,28 @@ body {
   font-weight: bold;
   color: #ffd54f;
   text-align: center;
+  pointer-events: none; /* puur tekst: mag de Stop-knop eronder niet blokkeren */
 }
 
 #beurtKnoppen {
   display: flex;
   gap: 10px;
+  width: 310px;        /* even breed als de dobbelsteen-rij */
+  max-width: 90vw;
+  position: relative;
+  z-index: 10;         /* boven omliggende (tekst)elementen */
 }
 
-/* ===== Overlays (31, meldingen, ronde-einde, scorebord) ===== */
-.overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.overlay-inhoud {
-  background-color: #2a2a40;
-  padding: 24px;
-  border-radius: 12px;
+/* ===== Worp 31: inline blok, kies wie er drinkt ===== */
+#overlay31Blok {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  max-width: 90%;
+  gap: 8px;
+  background-color: #2a2a40;
+  padding: 12px 24px;
+  border-radius: 12px;
+  max-width: 90vw;
   text-align: center;
 }
 
@@ -202,7 +197,43 @@ body {
   justify-content: center;
 }
 
-/* ===== Ronde-einde: verliezer + slokken groot, knoppen op één rij ===== */
+/* ===== Korte melding (Honderdmannetje/Mexicaantje): inline blok ===== */
+#meldingBlok {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background-color: #2a2a40;
+  padding: 12px 24px;
+  border-radius: 12px;
+}
+
+#meldingTekst {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin: 0;
+  pointer-events: none;
+}
+
+/* alle puur-tekst regels vangen geen tik op (knoppen eronder blijven werken) */
+#overlay31Tekst,
+#eindVerliezer,
+#eindSlokken,
+#eindMexicaantjes {
+  pointer-events: none;
+}
+
+/* ===== Ronde-einde: inline blok onder de dobbelstenen ===== */
+#eindBlok {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background-color: #2a2a40;
+  padding: 16px 24px;
+  border-radius: 12px;
+}
+
 #eindVerliezer {
   font-size: 1.6rem;
   font-weight: bold;
@@ -226,7 +257,19 @@ body {
   gap: 10px;
 }
 
-/* ===== Totaalscorebord als tabel ===== */
+/* ===== Totaalscorebord: inline blok ===== */
+#scorebordBlok {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background-color: #2a2a40;
+  padding: 16px 24px;
+  border-radius: 12px;
+  max-width: 90vw;
+  text-align: center;
+}
+
 #totaalScorebord {
   border-collapse: collapse;
   width: 100%;
@@ -266,7 +309,7 @@ body {
 /* ===== Knoppen ===== */
 #genereerNamenKnop, #startSpelKnop, #stopKnop,
 #nieuweRondeKnop, #nieuwSpelKnop, #instellingenKnop, #instellingenSluitKnop,
-#scorebordKnop, #scorebordSluitKnop, #meldingOverlayOkKnop,
+#scorebordKnop, #scorebordSluitKnop, #meldingOkKnop,
 #overlay31Knoppen button {
   font-size: 1.2rem;
   padding: 10px 24px;
@@ -277,11 +320,17 @@ body {
   cursor: pointer;
 }
 
-/* "Stop, volgende speler" is de enige losse actieknop: maak hem groot */
+/* "Stop, volgende speler" is de enige losse actieknop: maak hem groot
+   en goed tap-baar op mobiel (volle breedte, ruim boven 48px hoog) */
 #stopKnop {
   font-size: 1.4rem;
-  padding: 14px 36px;
   font-weight: bold;
+  width: 100%;
+  min-height: 56px;
+  padding: 14px 24px;
+  position: relative;
+  z-index: 10;
+  touch-action: manipulation; /* geen 300ms tap-delay / dubbeltik-zoom */
 }
 
 /* "Scorebord" is secundair: kleiner en neutraler */
