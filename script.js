@@ -13,7 +13,6 @@ const namenContainer = document.getElementById("namenContainer");
 const startSpelKnop = document.getElementById("startSpelKnop");
 
 const instellingenKnop = document.getElementById("instellingenKnop");
-const instellingenSamenvatting = document.getElementById("instellingenSamenvatting");
 const instellingenScherm = document.getElementById("instellingenScherm");
 const instBasisStraf = document.getElementById("instBasisStraf");
 const instMexicaantjeBonus = document.getElementById("instMexicaantjeBonus");
@@ -41,7 +40,7 @@ const overlay31 = document.getElementById("overlay31");
 const overlay31Tekst = document.getElementById("overlay31Tekst");
 const overlay31Knoppen = document.getElementById("overlay31Knoppen");
 
-const eindOverlay = document.getElementById("eindOverlay");
+const eindBlok = document.getElementById("eindBlok");
 const eindVerliezer = document.getElementById("eindVerliezer");
 const eindSlokken = document.getElementById("eindSlokken");
 const eindMexicaantjes = document.getElementById("eindMexicaantjes");
@@ -86,20 +85,6 @@ let instellingen = {
   maxWorpenVast: null,     // null = startspeler kiest 1-3, anders een vast getal
 };
 
-// Toon een korte samenvatting van de actieve huisregels op het setupscherm
-function renderInstellingenSamenvatting() {
-  const worpenTekst = instellingen.maxWorpenVast === null
-    ? "startspeler kiest 1-3"
-    : `vast op ${instellingen.maxWorpenVast}`;
-
-  instellingenSamenvatting.textContent =
-    `Huidige regels — basisstraf: ${instellingen.basisStraf} slok(ken) | ` +
-    `Mexicaantje-bonus: +${instellingen.mexicaantjeBonus} | ` +
-    `laten liggen: ${instellingen.latenLiggenAan ? "aan" : "uit"} | ` +
-    `Honderdmannetje: ${instellingen.honderdmannetjeAan ? "aan" : "uit"} | ` +
-    `worpen per beurt: ${worpenTekst}`;
-}
-
 // Open het instellingenscherm en vul de invoervelden met de huidige waarden
 instellingenKnop.addEventListener("click", () => {
   instBasisStraf.value = instellingen.basisStraf;
@@ -129,13 +114,9 @@ instellingenSluitKnop.addEventListener("click", () => {
     instellingen.maxWorpenVast = null;
   }
 
-  renderInstellingenSamenvatting();
   instellingenScherm.style.display = "none";
   setupScherm.style.display = "flex";
 });
-
-// toon de standaardregels meteen bij het laden van de pagina
-renderInstellingenSamenvatting();
 
 /* ========================================================================
    SPEL-STATE
@@ -153,7 +134,6 @@ let honderdmannetjeIndex = null; // index van de speler met "Honderdmannetje"-st
 let laatsteWorp = null;        // { d1, d2 } van de laatst afgeronde beurt (voor "laten liggen")
 let laatsteGeworpenDitBeurt = null; // { d1, d2 } van de huidige beurt (voor eindigBeurt)
 let gehoudenWaarden = { 1: null, 2: null }; // welke dobbelsteen-waarden blijven liggen
-let heeftAlLatenLiggen = false; // mag de huidige speler deze beurt nog 1x zelf iets laten liggen?
 let suddenDeath = null;        // { kandidaten, huidige, scores } tijdens gelijkspel
 
 let dobbelKlikbaar = false;    // mogen de dobbelstenen nu aangetikt worden om te gooien?
@@ -238,7 +218,6 @@ function startNieuweRondeState() {
   laatsteWorp = null;
   laatsteGeworpenDitBeurt = null;
   gehoudenWaarden = { 1: null, 2: null };
-  heeftAlLatenLiggen = false;
   suddenDeath = null;
 
   spelers.forEach((s) => {
@@ -364,14 +343,19 @@ function rolDobbelstenen() {
   }
 
   // een bewaarde waarde (van de vorige speler óf de eigen vorige worp)
-  // wordt gebruikt indien gezet, anders een nieuwe willekeurige worp
-  const d1 = gehoudenWaarden[1] !== null ? gehoudenWaarden[1] : worp();
-  const d2 = gehoudenWaarden[2] !== null ? gehoudenWaarden[2] : worp();
+  // wordt gebruikt indien gezet, anders een nieuwe willekeurige worp.
+  // vers1/vers2 onthouden of dit een ECHTE nieuwe worp is (voor de
+  // "dobbelsteen bewaren"-optie: een gehouden waarde mag niet opnieuw
+  // bewaard worden, alsof hij net gegooid was)
+  const vers1 = gehoudenWaarden[1] === null;
+  const vers2 = gehoudenWaarden[2] === null;
+  const d1 = vers1 ? worp() : gehoudenWaarden[1];
+  const d2 = vers2 ? worp() : gehoudenWaarden[2];
 
   gehoudenWaarden = { 1: null, 2: null };
   houdOptiesContainer.innerHTML = "";
 
-  animeerEnToon(d1, d2, () => verwerkWorp(d1, d2));
+  animeerEnToon(d1, d2, () => verwerkWorp(d1, d2, vers1, vers2));
 }
 
 // Klik op een dobbelsteen = gooien. Geldt voor elke worp van de beurt
@@ -415,7 +399,6 @@ function eindigBeurt() {
 
   huidigeSpelerIndex = volgende;
   worpTeller = 0;
-  heeftAlLatenLiggen = false; // nieuwe speler, nieuwe kans om iets te laten liggen
   toonBeurtStart();
   renderBeurtInfo();
   checkHoudOpties();
@@ -468,7 +451,7 @@ function verwerkHonderdmannetje(d1, d2, score, spelerIndex) {
     globaleStats[honderdmannetjeIndex].totaalSlokken += slokken;
     return {
       tekst: `${spelers[spelerIndex].naam} gooit ${score}! ` +
-             `Het Honderdmannetje (${spelers[honderdmannetjeIndex].naam}) drinkt ${slokken} slok(ken)!`,
+             `Het Honderdmannetje (${spelers[honderdmannetjeIndex].naam}) drinkt ${slokken} slokken!`,
       belangrijk: true,
     };
   }
@@ -477,7 +460,7 @@ function verwerkHonderdmannetje(d1, d2, score, spelerIndex) {
 }
 
 // Verwerk het resultaat van een worp: score, 31, Mexicaantje, Honderdmannetje
-function verwerkWorp(d1, d2) {
+function verwerkWorp(d1, d2, vers1, vers2) {
   const score = berekenScore(d1, d2);
 
   if (is31(d1, d2)) {
@@ -498,7 +481,7 @@ function verwerkWorp(d1, d2) {
   if (isMexicaantje(d1, d2)) {
     mexicaantjesDezeRonde++;
     globaleStats[huidigeSpelerIndex].mexicaantjes++;
-    mexicaantjeTekst = `${spelers[huidigeSpelerIndex].naam} gooit een Mexicaantje! (21)`;
+    mexicaantjeTekst = `🌮 ${spelers[huidigeSpelerIndex].naam} — MEXICAANTJE!`;
   }
 
   // 1+1 en honderdtallen kunnen nooit samenvallen met een Mexicaantje (1+2),
@@ -506,20 +489,33 @@ function verwerkWorp(d1, d2) {
   const meldingTekst = honderd.tekst || mexicaantjeTekst;
 
   if (meldingTekst) {
-    toonMeldingOverlay(meldingTekst, () => vervolgNaWorp(d1, d2));
+    toonMeldingOverlay(meldingTekst, () => vervolgNaWorp(d1, d2, vers1, vers2));
   } else {
-    vervolgNaWorp(d1, d2);
+    vervolgNaWorp(d1, d2, vers1, vers2);
   }
 }
 
 // Na het verwerken van een worp (en eventuele melding): juiste knoppen/staat
 // tonen. Zijn er nog worpen over, dan worden de dobbelstenen klikbaar om
 // opnieuw te gooien; anders alleen nog "Stop".
-function vervolgNaWorp(d1, d2) {
+function vervolgNaWorp(d1, d2, vers1, vers2) {
   const magNogGooien = worpTeller < maxWorpenVoorHuidigeSpeler();
+  const isLaatsteSpelerVanRonde =
+    (huidigeSpelerIndex + 1) % spelers.length === startSpelerIndex;
+
+  if (!magNogGooien && isLaatsteSpelerVanRonde) {
+    // laatste worp van de laatste speler: geen "Stop"-knop meer nodig,
+    // na korte pauze automatisch de ronde afronden
+    maakDobbelOnklikbaar();
+    beurtKnoppen.style.display = "none";
+    renderBeurtInfo();
+    setTimeout(() => eindigBeurt(), 1500);
+    return;
+  }
+
   toonNaWorp(magNogGooien);
   renderBeurtInfo();
-  if (magNogGooien) toonEigenHoudOptie(d1, d2);
+  if (magNogGooien) toonEigenHoudOptie(d1, d2, vers1, vers2);
 }
 
 // Toon (indien van toepassing) de keuze om een dobbelsteen te laten liggen
@@ -531,45 +527,44 @@ function checkHoudOpties() {
   if (worpTeller !== 0 || laatsteWorp === null) return;
 
   if (laatsteWorp.d1 === 1 || laatsteWorp.d1 === 2) {
-    houdOptiesContainer.appendChild(maakHoudKnop(1, laatsteWorp.d1, false));
+    houdOptiesContainer.appendChild(maakHoudKnop(1, laatsteWorp.d1));
   }
   if (laatsteWorp.d2 === 1 || laatsteWorp.d2 === 2) {
-    houdOptiesContainer.appendChild(maakHoudKnop(2, laatsteWorp.d2, false));
+    houdOptiesContainer.appendChild(maakHoudKnop(2, laatsteWorp.d2));
   }
 }
 
 // Toon (indien van toepassing) de keuze om je EIGEN net gegooide 1 of 2 te
-// laten liggen voor je volgende worp binnen deze beurt. Mag maar 1x per beurt.
-function toonEigenHoudOptie(d1, d2) {
+// laten liggen voor je volgende worp binnen deze beurt. canKeep wordt elke
+// worp opnieuw bepaald (geen beperking van 1x per beurt). Een gehouden
+// waarde die niet opnieuw gegooid is (vers1/vers2 = false) telt niet:
+// die mag niet nóg eens "bewaard" worden.
+function toonEigenHoudOptie(d1, d2, vers1, vers2) {
   houdOptiesContainer.innerHTML = "";
   if (!instellingen.latenLiggenAan) return;
-  if (heeftAlLatenLiggen) return;
   if (worpTeller >= maxWorpenVoorHuidigeSpeler()) return; // geen volgende worp meer
 
-  if (d1 === 1 || d1 === 2) {
-    houdOptiesContainer.appendChild(maakHoudKnop(1, d1, true));
+  if (vers1 && (d1 === 1 || d1 === 2)) {
+    houdOptiesContainer.appendChild(maakHoudKnop(1, d1));
   }
-  if (d2 === 1 || d2 === 2) {
-    houdOptiesContainer.appendChild(maakHoudKnop(2, d2, true));
+  if (vers2 && (d2 === 1 || d2 === 2)) {
+    houdOptiesContainer.appendChild(maakHoudKnop(2, d2));
   }
 }
 
 // Maak een grote, tap-bare knop waarmee een dobbelsteen-waarde bewaard wordt
 // voor de volgende worp. Standaard UIT (neutraal), aangeklikt AAN (accentkleur).
-// Bij eigenWorp = true wordt heeftAlLatenLiggen gezet zodra de speler de optie
-// één keer aanzet (max. 1x per beurt).
-function maakHoudKnop(dobbelNr, waarde, eigenWorp) {
+function maakHoudKnop(dobbelNr, waarde) {
   const knop = document.createElement("button");
   knop.type = "button";
   knop.className = "bewaarKnop";
-  knop.textContent = `Dobbelsteen ${dobbelNr} (${waarde}) bewaren: UIT`;
+  knop.textContent = `🎲 ${waarde} bewaren: UIT`;
 
   knop.addEventListener("click", () => {
     const nuAan = gehoudenWaarden[dobbelNr] === null; // toggle
     gehoudenWaarden[dobbelNr] = nuAan ? waarde : null;
     knop.classList.toggle("aan", nuAan);
-    knop.textContent = `Dobbelsteen ${dobbelNr} (${waarde}) bewaren: ${nuAan ? "AAN" : "UIT"}`;
-    if (eigenWorp && nuAan) heeftAlLatenLiggen = true;
+    knop.textContent = `🎲 ${waarde} bewaren: ${nuAan ? "AAN" : "UIT"}`;
   });
 
   return knop;
@@ -615,7 +610,7 @@ function kiesWieDrinktBij31(gekozenIndex) {
   overlay31Knoppen.innerHTML = "";
 
   const verderKnop = document.createElement("button");
-  verderKnop.textContent = "Verder (gooi opnieuw)";
+  verderKnop.textContent = "Opnieuw gooien";
   verderKnop.addEventListener("click", () => {
     overlay31.style.display = "none";
     // 31 telt niet als beurt: speler gooit direct opnieuw. Herstel de
@@ -688,7 +683,7 @@ scorebordSluitKnop.addEventListener("click", () => {
 nieuwSpelKnop.addEventListener("click", () => {
   startNieuwSpel();
 
-  eindOverlay.style.display = "none";
+  eindBlok.style.display = "none";
 
   leegDobbelen();
   laatsteWorpInfo.textContent = "";
@@ -771,7 +766,7 @@ function toonEindscherm(verliezerIndex) {
   globaleStats[verliezerIndex].totaalSlokken += straf;
 
   eindVerliezer.textContent = `😵 ${spelers[verliezerIndex].naam} verliest`;
-  eindSlokken.textContent = `🍺 ${straf} slok(ken)`;
+  eindSlokken.textContent = `🍺 ${straf} slokken`;
 
   // bonusregel alleen tonen als er ook echt Mexicaantjes gegooid zijn
   if (mexicaantjesDezeRonde > 0) {
@@ -781,7 +776,7 @@ function toonEindscherm(verliezerIndex) {
     eindMexicaantjes.style.display = "none";
   }
 
-  eindOverlay.style.display = "flex";
+  eindBlok.style.display = "flex";
 }
 
 // "Nieuwe ronde": reset de ronde-state en geef de beurt aan de volgende startspeler
@@ -792,7 +787,7 @@ nieuweRondeKnop.addEventListener("click", () => {
   startSpelerIndex = (startSpelerIndex + 1) % spelers.length;
   huidigeSpelerIndex = startSpelerIndex;
 
-  eindOverlay.style.display = "none";
+  eindBlok.style.display = "none";
 
   leegDobbelen();
   laatsteWorpInfo.textContent = "";
