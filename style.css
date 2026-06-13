@@ -1,0 +1,292 @@
+/* ===== Stap A: basis pagina-opmaak ===== */
+body {
+  margin: 0;
+  height: 100vh;
+  background-color: #1e1e2f; /* donkere achtergrond */
+  color: #f5f5f5;
+  font-family: Arial, sans-serif;
+
+  /* alles centreren met flexbox */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+/* ===== Dobbelstenen met pips (stippen) — zo groot mogelijk ===== */
+#dobbelstenen {
+  display: flex;
+  gap: 30px;
+  perspective: 800px; /* nodig voor het 3D-tuimel effect */
+}
+
+.dobbel {
+  width: 140px;
+  height: 140px;
+  background-color: #f5f5dc; /* creme vlak */
+  border-radius: 16px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+
+  /* 3x3 grid voor de 9 mogelijke pip-posities */
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 16px;
+  box-sizing: border-box;
+
+  transform-style: preserve-3d; /* zodat rotateX/rotateY echt 3D zijn */
+}
+
+.pip {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  align-self: center;
+  justify-self: center;
+  background-color: transparent; /* standaard onzichtbaar */
+}
+
+/* zichtbare stip (zwart, zoals echte dobbelsteen) */
+.pip.show {
+  background-color: #222;
+}
+
+/* ===== 3D-tuimel animatie =====
+   --rx en --ry worden per worp door JS gezet (veelvouden van 360deg,
+   zodat de dobbelsteen altijd weer plat eindigt op het eindresultaat). */
+@keyframes tuimel {
+  0%   { transform: rotateX(0deg) rotateY(0deg) scale(1); }
+  50%  { transform: rotateX(calc(var(--rx) / 2)) rotateY(calc(var(--ry) / 2)) scale(0.85); }
+  100% { transform: rotateX(var(--rx)) rotateY(var(--ry)) scale(1); }
+}
+
+.dobbel.tuimel {
+  animation: tuimel 0.6s ease-in-out;
+}
+
+/* ===== Klikbaar: zachte pulse/gloed om aan te geven "tik mij" ===== */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 0 0 rgba(255, 213, 79, 0);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 18px rgba(255, 213, 79, 0.85);
+  }
+}
+
+.dobbel.klikbaar {
+  cursor: pointer;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+/* ===== Setup en instellingen ===== */
+#setupScherm, #spelScherm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+#namenContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.spelerNaamInput, #aantalSpelersInput {
+  padding: 6px;
+  border-radius: 6px;
+  border: none;
+}
+
+#instellingenScherm {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  background-color: #2a2a40;
+  padding: 16px;
+  border-radius: 10px;
+  max-width: 320px;
+}
+
+#instellingenSamenvatting {
+  font-size: 0.85rem;
+  color: #cfcfcf;
+  text-align: center;
+  max-width: 320px;
+}
+
+/* ===== Spelscherm: één focus ===== */
+
+/* bovenaan: wiens beurt, groot en vet */
+#beurtInfo {
+  font-size: 1.6rem;
+  font-weight: bold;
+  text-align: center;
+  margin: 0;
+}
+
+/* container voor de bewaar-knop(pen): even breed als de dobbelsteen-rij */
+#houdOptiesContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 310px;       /* 140 + 140 + 30px gap = breedte dobbelstenen */
+  max-width: 90vw;
+}
+
+/* grote, tap-bare knop die een dobbelsteen-waarde bewaart */
+.bewaarKnop {
+  width: 100%;
+  min-height: 48px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  background-color: #555; /* neutraal: UIT */
+  color: white;
+  cursor: pointer;
+}
+
+/* aangeklikt: accentkleur (oranje) = AAN */
+.bewaarKnop.aan {
+  background-color: #ff9800;
+  color: #1e1e2f;
+  font-weight: bold;
+}
+
+/* alleen de score van de speler die net gegooid heeft */
+#laatsteWorpInfo {
+  min-height: 1.4em;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #ffd54f;
+  text-align: center;
+}
+
+#beurtKnoppen {
+  display: flex;
+  gap: 10px;
+}
+
+/* ===== Overlays (31, meldingen, ronde-einde, scorebord) ===== */
+.overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.overlay-inhoud {
+  background-color: #2a2a40;
+  padding: 24px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 90%;
+  text-align: center;
+}
+
+#overlay31Knoppen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* ===== Ronde-einde: verliezer + slokken groot, knoppen op één rij ===== */
+#eindVerliezer {
+  font-size: 1.6rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+#eindSlokken {
+  font-size: 2.4rem;
+  font-weight: bold;
+  color: #ffd54f;
+  margin: 0;
+}
+
+#eindMexicaantjes {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+#eindKnoppen {
+  display: flex;
+  gap: 10px;
+}
+
+/* ===== Totaalscorebord als tabel ===== */
+#totaalScorebord {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* kolomhoofden: icoon + kort label */
+#totaalScorebord th {
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  color: #cfcfcf;
+  border-bottom: 2px solid #444;
+}
+
+#totaalScorebord td {
+  padding: 8px 12px;
+  font-size: 1.2rem; /* grote, leesbare getallen (>18px) */
+  text-align: center;
+  border-bottom: 1px solid #3a3a55;
+}
+
+/* spelersnaam: eerste kolom, links uitgelijnd */
+#totaalScorebord td.speler-naam {
+  text-align: left;
+  font-weight: bold;
+}
+
+/* meeste slokken (verliest het meest): rode tint, heeft voorrang */
+#totaalScorebord tr.meeste-slokken td {
+  background-color: rgba(229, 57, 53, 0.35);
+}
+
+/* meeste Mexicanen: gouden tint */
+#totaalScorebord tr.meeste-mexicanen td {
+  background-color: rgba(255, 213, 79, 0.30);
+}
+
+/* ===== Knoppen ===== */
+#genereerNamenKnop, #startSpelKnop, #stopKnop,
+#nieuweRondeKnop, #nieuwSpelKnop, #instellingenKnop, #instellingenSluitKnop,
+#scorebordKnop, #scorebordSluitKnop, #meldingOverlayOkKnop,
+#overlay31Knoppen button {
+  font-size: 1.2rem;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  background-color: #4caf50;
+  color: white;
+  cursor: pointer;
+}
+
+/* "Stop, volgende speler" is de enige losse actieknop: maak hem groot */
+#stopKnop {
+  font-size: 1.4rem;
+  padding: 14px 36px;
+  font-weight: bold;
+}
+
+/* "Scorebord" is secundair: kleiner en neutraler */
+#scorebordKnop {
+  font-size: 0.95rem;
+  padding: 6px 16px;
+  background-color: #555;
+}

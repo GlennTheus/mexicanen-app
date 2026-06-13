@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mexicanen</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="manifest.json" />
+  </head>
+  <body>
+
+    <h1>Mexicanen</h1>
+
+    <!-- ===== Setup-scherm (aantal spelers + namen) ===== -->
+    <div id="setupScherm">
+      <label for="aantalSpelersInput">Aantal spelers (2-8):</label>
+      <input type="number" id="aantalSpelersInput" min="2" max="8" value="2" />
+      <button id="genereerNamenKnop">Namen invoeren</button>
+
+      <!-- hier komen de naam-invoervelden, gegenereerd door JS -->
+      <div id="namenContainer"></div>
+
+      <button id="startSpelKnop" style="display: none">Start spel</button>
+
+      <!-- toegang tot instellingen + samenvatting -->
+      <button id="instellingenKnop" type="button">⚙️ Instellingen</button>
+      <div id="instellingenSamenvatting"></div>
+    </div>
+
+    <!-- ===== Instellingenscherm (huisregels) ===== -->
+    <div id="instellingenScherm" style="display: none">
+      <h2>Instellingen / huisregels</h2>
+
+      <label>
+        Basisstraf verliezer (slokken):
+        <input type="number" id="instBasisStraf" min="0" />
+      </label>
+
+      <label>
+        Extra slokken per Mexicaantje:
+        <input type="number" id="instMexicaantjeBonus" min="0" />
+      </label>
+
+      <label>
+        <input type="checkbox" id="instLatenLiggen" />
+        Dobbelsteen laten liggen toestaan
+      </label>
+
+      <label>
+        <input type="checkbox" id="instHonderdmannetje" />
+        Honderdmannetje-regel actief
+      </label>
+
+      <label>
+        <input type="checkbox" id="instMaxWorpenVastAan" />
+        Aantal worpen per beurt vastzetten (anders kiest startspeler 1-3)
+      </label>
+
+      <label>
+        Vast aantal worpen:
+        <input type="number" id="instMaxWorpenAantal" min="1" max="3" value="2" />
+      </label>
+
+      <button id="instellingenSluitKnop">Sluiten</button>
+    </div>
+
+    <!-- ===== Spelscherm: simpel, één focus ===== -->
+    <div id="spelScherm" style="display: none">
+      <!-- Bovenaan: wiens beurt, groot en vet -->
+      <h2 id="beurtInfo"></h2>
+
+      <!-- Midden: de dobbelstenen, zo groot mogelijk en klikbaar om opnieuw te gooien -->
+      <div id="dobbelstenen">
+        <div class="dobbel" id="dobbel1">
+          <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+          <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+          <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+        </div>
+        <div class="dobbel" id="dobbel2">
+          <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+          <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+          <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+        </div>
+      </div>
+
+      <!-- knop om een dobbelsteen te bewaren (alleen indien relevant) -->
+      <div id="houdOptiesContainer"></div>
+
+      <!-- alleen de score van de speler die net gegooid heeft -->
+      <p id="laatsteWorpInfo"></p>
+
+      <!-- Tikken op de dobbelstenen = gooien. Enige losse knop: Stop. -->
+      <div id="beurtKnoppen" style="display: none">
+        <button id="stopKnop">Stop, volgende speler</button>
+      </div>
+
+      <button id="scorebordKnop">📊 Scorebord</button>
+    </div>
+
+    <!-- ===== Overlay: simpele melding met 1 knop "OK" ===== -->
+    <div id="meldingOverlay" class="overlay" style="display: none">
+      <div class="overlay-inhoud">
+        <p id="meldingOverlayTekst"></p>
+        <button id="meldingOverlayOkKnop">OK</button>
+      </div>
+    </div>
+
+    <!-- ===== Overlay: worp 31, kies wie er drinkt ===== -->
+    <div id="overlay31" class="overlay" style="display: none">
+      <div class="overlay-inhoud">
+        <p id="overlay31Tekst"></p>
+        <div id="overlay31Knoppen"></div>
+      </div>
+    </div>
+
+    <!-- ===== Overlay: ronde-einde ===== -->
+    <div id="eindOverlay" class="overlay" style="display: none">
+      <div class="overlay-inhoud">
+        <p id="eindVerliezer"></p>
+        <p id="eindSlokken"></p>
+        <p id="eindMexicaantjes" style="display: none"></p>
+        <div id="eindKnoppen">
+          <button id="nieuweRondeKnop">Nieuwe ronde</button>
+          <button id="nieuwSpelKnop">Nieuw spel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Overlay: totaalscorebord ===== -->
+    <div id="scorebordOverlay" class="overlay" style="display: none">
+      <div class="overlay-inhoud">
+        <h2>Totaalscores</h2>
+        <table id="totaalScorebord">
+          <thead>
+            <tr>
+              <th>Speler</th>
+              <th>😵 Verloren</th>
+              <th>🍺 Slokken</th>
+              <th>🌮 Mexicanen</th>
+            </tr>
+          </thead>
+          <!-- rijen worden door JS gevuld -->
+          <tbody id="totaalScorebordBody"></tbody>
+        </table>
+        <button id="scorebordSluitKnop">Sluiten</button>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
