@@ -32,11 +32,11 @@ const beurtKnoppen = document.getElementById("beurtKnoppen");
 const stopKnop = document.getElementById("stopKnop");
 const scorebordKnop = document.getElementById("scorebordKnop");
 
-const meldingOverlay = document.getElementById("meldingOverlay");
-const meldingOverlayTekst = document.getElementById("meldingOverlayTekst");
-const meldingOverlayOkKnop = document.getElementById("meldingOverlayOkKnop");
+const meldingBlok = document.getElementById("meldingBlok");
+const meldingTekstEl = document.getElementById("meldingTekst");
+const meldingOkKnop = document.getElementById("meldingOkKnop");
 
-const overlay31 = document.getElementById("overlay31");
+const overlay31 = document.getElementById("overlay31Blok");
 const overlay31Tekst = document.getElementById("overlay31Tekst");
 const overlay31Knoppen = document.getElementById("overlay31Knoppen");
 
@@ -47,7 +47,7 @@ const eindMexicaantjes = document.getElementById("eindMexicaantjes");
 const nieuweRondeKnop = document.getElementById("nieuweRondeKnop");
 const nieuwSpelKnop = document.getElementById("nieuwSpelKnop");
 
-const scorebordOverlay = document.getElementById("scorebordOverlay");
+const scorebordOverlay = document.getElementById("scorebordBlok");
 const totaalScorebordBody = document.getElementById("totaalScorebordBody");
 const scorebordSluitKnop = document.getElementById("scorebordSluitKnop");
 
@@ -450,8 +450,7 @@ function verwerkHonderdmannetje(d1, d2, score, spelerIndex) {
     const slokken = score / 100; // eerste cijfer van de worp
     globaleStats[honderdmannetjeIndex].totaalSlokken += slokken;
     return {
-      tekst: `${spelers[spelerIndex].naam} gooit ${score}! ` +
-             `Het Honderdmannetje (${spelers[honderdmannetjeIndex].naam}) drinkt ${slokken} slokken!`,
+      tekst: `🍺 ${spelers[honderdmannetjeIndex].naam} drinkt ${slokken} slokken!`,
       belangrijk: true,
     };
   }
@@ -466,7 +465,7 @@ function verwerkWorp(d1, d2, vers1, vers2) {
   if (is31(d1, d2)) {
     // 31 telt niet als beurt: overlay laat de speler kiezen wie er drinkt,
     // daarna mag dezelfde speler direct opnieuw gooien
-    toon31Overlay(huidigeSpelerIndex);
+    toon31Overlay(huidigeSpelerIndex, d1, d2, vers1, vers2);
     return; // worpTeller blijft gelijk, score wordt niet opgeslagen
   }
 
@@ -474,7 +473,7 @@ function verwerkWorp(d1, d2, vers1, vers2) {
 
   worpTeller++;
   spelers[huidigeSpelerIndex].score = score; // voorlopig, definitief bij stoppen
-  laatsteGeworpenDitBeurt = { d1: d1, d2: d2 };
+  laatsteGeworpenDitBeurt = { d1: d1, d2: d2, vers1: vers1, vers2: vers2 };
   laatsteWorpInfo.textContent = `${spelers[huidigeSpelerIndex].naam} gooide: ${formatScore(score)}`;
 
   let mexicaantjeTekst = "";
@@ -520,16 +519,18 @@ function vervolgNaWorp(d1, d2, vers1, vers2) {
 
 // Toon (indien van toepassing) de keuze om een dobbelsteen te laten liggen
 // die de VORIGE speler als laatste worp gooide (1 of 2). Geldt alleen voor
-// de allereerste worp van een beurt.
+// de allereerste worp van een beurt. Een dobbelsteen die de vorige speler
+// zelf al gehouden had (vers1/vers2 = false) is al "verbruikt" en mag niet
+// nóg eens doorgegeven worden.
 function checkHoudOpties() {
   houdOptiesContainer.innerHTML = "";
   if (!instellingen.latenLiggenAan) return;
   if (worpTeller !== 0 || laatsteWorp === null) return;
 
-  if (laatsteWorp.d1 === 1 || laatsteWorp.d1 === 2) {
+  if (laatsteWorp.vers1 && (laatsteWorp.d1 === 1 || laatsteWorp.d1 === 2)) {
     houdOptiesContainer.appendChild(maakHoudKnop(1, laatsteWorp.d1));
   }
-  if (laatsteWorp.d2 === 1 || laatsteWorp.d2 === 2) {
+  if (laatsteWorp.vers2 && (laatsteWorp.d2 === 1 || laatsteWorp.d2 === 2)) {
     houdOptiesContainer.appendChild(maakHoudKnop(2, laatsteWorp.d2));
   }
 }
@@ -574,19 +575,19 @@ function maakHoudKnop(dobbelNr, waarde) {
    DRINKLOGICA EN -NOTIFICATIES (overlays)
    ======================================================================== */
 
-// Generieke melding-overlay: één zin + knop "OK". De callback wordt
-// uitgevoerd zodra de speler op OK klikt.
+// Generieke melding: inline blok onder de dobbelstenen, één zin + knop "OK".
+// De callback wordt uitgevoerd zodra de speler op OK klikt.
 function toonMeldingOverlay(tekst, callback) {
-  meldingOverlayTekst.textContent = tekst;
-  meldingOverlay.style.display = "flex";
-  meldingOverlayOkKnop.onclick = () => {
-    meldingOverlay.style.display = "none";
+  meldingTekstEl.textContent = tekst;
+  meldingBlok.style.display = "flex";
+  meldingOkKnop.onclick = () => {
+    meldingBlok.style.display = "none";
     callback();
   };
 }
 
 // Toon de 31-overlay: de gooier kiest wie er een slok krijgt
-function toon31Overlay(spelerIndex) {
+function toon31Overlay(spelerIndex, d1, d2, vers1, vers2) {
   overlay31Tekst.textContent = `${spelers[spelerIndex].naam} gooit 31! Kies wie er drinkt.`;
   overlay31Knoppen.innerHTML = "";
 
@@ -594,7 +595,7 @@ function toon31Overlay(spelerIndex) {
     if (i === spelerIndex) return; // de gooier kan niet zichzelf kiezen
     const knop = document.createElement("button");
     knop.textContent = speler.naam;
-    knop.addEventListener("click", () => kiesWieDrinktBij31(i));
+    knop.addEventListener("click", () => kiesWieDrinktBij31(i, d1, d2, vers1, vers2));
     overlay31Knoppen.appendChild(knop);
   });
 
@@ -603,7 +604,7 @@ function toon31Overlay(spelerIndex) {
 
 // Verwerk de keuze bij een 31: gekozen speler drinkt 1 slok.
 // Daarna sluit de speler de overlay en gooit (dezelfde speler) opnieuw.
-function kiesWieDrinktBij31(gekozenIndex) {
+function kiesWieDrinktBij31(gekozenIndex, d1, d2, vers1, vers2) {
   globaleStats[gekozenIndex].totaalSlokken += 1;
 
   overlay31Tekst.textContent = `${spelers[gekozenIndex].naam} drinkt 1 slok!`;
@@ -621,6 +622,9 @@ function kiesWieDrinktBij31(gekozenIndex) {
       toonNaWorp(true);
     }
     renderBeurtInfo();
+    // de 31-worp zelf telt niet als beurt, maar een 1 of 2 daarin mag
+    // alsnog bewaard worden voor de herworp
+    toonEigenHoudOptie(d1, d2, vers1, vers2);
   });
   overlay31Knoppen.appendChild(verderKnop);
 }
