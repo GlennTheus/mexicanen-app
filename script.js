@@ -367,10 +367,16 @@ function probeerGooien() {
 dobbel1.addEventListener("click", probeerGooien);
 dobbel2.addEventListener("click", probeerGooien);
 
-// "Stop, volgende speler": beurt direct beëindigen
-stopKnop.addEventListener("click", () => {
+// "Stop, volgende speler": beurt direct beëindigen.
+// Naast "click" ook "touchend" zodat mobiel zeker reageert. preventDefault op
+// touchend onderdrukt de daarna gesynthetiseerde click, zodat eindigBeurt()
+// maar één keer draait (anders zou er een speler overgeslagen worden).
+function stopBeurtHandler(e) {
+  if (e.type === "touchend") e.preventDefault();
   eindigBeurt();
-});
+}
+stopKnop.addEventListener("click", stopBeurtHandler);
+stopKnop.addEventListener("touchend", stopBeurtHandler);
 
 // Ronde de huidige beurt af en geef de beurt door aan de volgende speler
 function eindigBeurt() {
