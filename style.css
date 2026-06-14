@@ -341,7 +341,12 @@ body {
   background-color: #555;
 }
 
-/* Contextuele actie-panelen zweven bovenop en staan altijd in beeld */
+/* ===== Fix: contextuele actie-panelen zweven bovenop en staan altijd in beeld =====
+   #overlay31Blok, #meldingBlok, #eindBlok en #scorebordBlok worden door
+   script.js op display:flex/none gezet, maar stonden in de gewone
+   documentflow onder de dobbelstenen. Op kleine schermen vielen ze daardoor
+   buiten beeld (leek alsof het spel vastliep). Nu altijd gecentreerd,
+   bovenop alles, met een gedimde achtergrond. */
 #overlay31Blok,
 #meldingBlok,
 #eindBlok,
