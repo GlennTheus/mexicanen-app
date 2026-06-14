@@ -340,3 +340,18 @@ body {
   padding: 6px 16px;
   background-color: #555;
 }
+
+/* Contextuele actie-panelen zweven bovenop en staan altijd in beeld */
+#overlay31Blok,
+#meldingBlok,
+#eindBlok,
+#scorebordBlok {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.55);
+}
