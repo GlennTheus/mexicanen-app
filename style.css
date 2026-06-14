@@ -1,19 +1,20 @@
 /* ===== Stap A: basis pagina-opmaak ===== */
 body {
   margin: 0;
-  min-height: 100vh; /* min ipv vast: bij veel inhoud groeit de pagina i.p.v. afknippen */
+  min-height: 100vh; /* fallback voor browsers zonder dvh-ondersteuning */
+  min-height: 100dvh; /* dynamic viewport height: houdt rekening met mobiele adresbalk */
   box-sizing: border-box;
-  padding: 20px 0;
+  padding: 40px 0 20px; /* extra padding-top nu content niet meer gecentreerd is */
   background-color: #1e1e2f; /* donkere achtergrond */
   color: #f5f5f5;
   font-family: Arial, sans-serif;
 
-  /* alles centreren met flexbox; bij overflow blijft de pagina scrollbaar
-     (geen onbereikbare knoppen onderaan op mobiel) */
+  /* horizontaal centreren, maar vanaf boven uitlijnen zodat alle content
+     (ook knoppen/meldingen onderaan) bereikbaar blijft via scrollen op mobiel */
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 20px;
 }
 
